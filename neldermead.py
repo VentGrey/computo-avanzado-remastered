@@ -12,7 +12,7 @@ from typing import List
 def sphere(x: List[float]) -> float:
     return sum([xi**2 for xi in x])
 
-def nelder_mead(f, n, alpha, sigma, delta, rho):
+def nelder_mead(f, n: int, alpha: int, sigma: int, delta: float, rho: float):
     # Inicializar el simplex.
     x: List[List[float]] = [[random() for _ in range(n)] for _ in range(n + 1)]
 
@@ -23,22 +23,69 @@ def nelder_mead(f, n, alpha, sigma, delta, rho):
 
         # Calcular el centro de masa. Determinar el centro de masa de los n mejores puntos.
         x_cent = [sum([x[i][j] for i in range(n)]) / n for j in range(n)]
+        print("-----iteración con centro de masa: ", x_cent, "----------------")
+        print("Valor del centro de masa: ", x_cent)
 
-        # Calcular la reflexión. (Reflejar el peor punto en el centro de masa).
-        x_refl = [x_cent[i] + alpha * (x_cent[i] - x[-1][i]) for i in range(n)]
+        # Calcular el punto de reflexión.
+        x_ref = [x_cent[i] + alpha * (x_cent[i] - x[-1][i]) for i in range(n)]
 
-        # Si la reflexión es mejor que el mejor punto, pero no mejor que el segundo mejor.
-        # (Expandir el simplex en la dirección de la reflexión).
-        if f(x_refl) < f(x[0]) and f(x_refl) >= f(x[1]):
-            x[-1] = x_refl
-            continue
+        print("Valor del punto de reflexión: ", x_ref)
 
-        # Si la reflexión es mejor que el mejor punto.
-        # (Expandir el simplex en la dirección de la reflexión).
-        if f(x_refl) < f(x[0]):
-            x_exp = [x_cent[i] + sigma * (x_refl[i] - x_cent[i]) for i in range(n)]
-            if f(x_exp) < f(x_refl):
+        # Si el punto de reflexión es mejor que el mejor punto del simplex.
+        if f(x_ref) < f(x[0]):
+            # Calcular el punto de expansión.
+            x_exp = [x_cent[i] + sigma * (x_ref[i] - x_cent[i]) for i in range(n)]
+
+            print("Valor del punto de expansión: ", x_exp)
+
+            # Si el punto de expansión es mejor que el punto de reflexión.
+            if f(x_exp) < f(x_ref):
+                # Reemplazar el peor punto del simplex por el punto de expansión.
                 x[-1] = x_exp
+            # Si el punto de expansión es peor que el punto de reflexión.
             else:
-                x[-1] = x_refl
-            continue
+                # Reemplazar el peor punto del simplex por el punto de reflexión.
+                x[-1] = x_ref
+        # Si el punto de reflexión es peor que el peor punto del simplex.
+        elif f(x_ref) > f(x[-2]):
+            # Calcular el punto de contracción.
+            x_con = [x_cent[i] + delta * (x[-1][i] - x_cent[i]) for i in range(n)]
+
+            print("Valor del punto de contracción: ", x_con)
+            print("-----------------------------------------------------------")
+            # Si el punto de contracción es mejor que el peor punto del simplex.
+            if f(x_con) < f(x[-1]):
+                # Reemplazar el peor punto del simplex por el punto de contracción.
+                x[-1] = x_con
+            # Si el punto de contracción es peor que el peor punto del simplex.
+            else:
+                # Reducir el simplex.
+                for i in range(1, n + 1):
+                    x[i] = [x[0][j] + rho * (x[i][j] - x[0][j]) for j in range(n)]
+        # Si el punto de reflexión es mejor que el peor punto del simplex.
+        else:
+            # Reemplazar el peor punto del simplex por el punto de reflexión.
+            x[-1] = x_ref
+
+        # Si la condición de parada se cumple.
+        if all([abs(x[-1][i] - x[0][i]) < 1e-6 for i in range(n)]):
+            # Devolver el mejor punto del simplex.
+            return x[0]
+
+# Ejemplo de uso.
+if __name__ == "__main__":
+    # Definir la función objetivo.
+    f = sphere
+
+    # Definir los parámetros del algoritmo.
+    n: int = 2
+    alpha: int = 1
+    sigma: int = 2
+    delta: float = 0.5
+    rho: float = 0.5
+
+    # Ejecutar el algoritmo.
+    x: List[float] = nelder_mead(f, n, alpha, sigma, delta, rho)
+
+    # Imprimir el resultado.
+    print("El punto mínimo es: ", x)
